@@ -3,9 +3,10 @@ import {
   ACCESS_CONTROL,
   ACCESSIBLE,
   AUTHENTICATION_TYPE,
-  BIOMETRY_TYPE,
+  BIOMETRY_TYPE, // eslint-disable-line no-unused-vars
   canImplyAuthentication,
   getGenericPassword,
+  getAllGenericPasswordServices,
   getInternetCredentials,
   getSupportedBiometryType,
   hasInternetCredentials,
@@ -18,13 +19,14 @@ import {
   type Options,
   type Result,
   type UserCredentials,
-  type SharedWebCredentials,
-} from 'react-native-keychain';
+  type SharedWebCredentials, // eslint-disable-line no-unused-vars
+} from '.';
 
-canImplyAuthentication().then(result => {
+canImplyAuthentication().then((result) => {
   (result: boolean);
 });
 
+// eslint-disable-next-line no-unused-vars
 const simpleOptions2: Options = {
   // $FlowExpectedError - not valid accessible value
   accessible: 'ACCESSIBLE.ALWAYS',
@@ -44,11 +46,11 @@ const simpleOptions: Options = {
   service: 'service',
 };
 
-canImplyAuthentication(simpleOptions).then(result => {
+canImplyAuthentication(simpleOptions).then((result) => {
   (result: boolean);
 });
 
-getSupportedBiometryType().then(result => {
+getSupportedBiometryType().then((result) => {
   (result: ?string);
 });
 
@@ -56,20 +58,20 @@ getSupportedBiometryType().then(result => {
 setInternetCredentials();
 setInternetCredentials('server', 'username', 'password');
 setInternetCredentials('server', 'username', 'password', simpleOptions).then(
-  result => {
+  (result) => {
     (result: boolean | Result);
   }
 );
 
 // $FlowExpectedError - First argument is required
 hasInternetCredentials();
-hasInternetCredentials('server').then(result => {
+hasInternetCredentials('server').then((result) => {
   (result: boolean | Result);
 });
 
 // $FlowExpectedError - First argument is required
 getInternetCredentials();
-getInternetCredentials('server', simpleOptions).then(credentials => {
+getInternetCredentials('server', simpleOptions).then((credentials) => {
   if (credentials) {
     (credentials.username: string);
     (credentials.password: string);
@@ -80,34 +82,37 @@ getInternetCredentials('server', simpleOptions).then(credentials => {
 
 // $FlowExpectedError - First argument is required
 resetInternetCredentials();
-resetInternetCredentials('server').then(result => {
+resetInternetCredentials('server').then((result) => {
   (result: void);
 });
 
 // $FlowExpectedError - First two arguments are required
 setGenericPassword();
-setGenericPassword('username', 'password').then(result => {
+setGenericPassword('username', 'password').then((result) => {
   (result: boolean | Result);
 });
 setGenericPassword('username', 'password', simpleOptions);
 setGenericPassword('username', 'password', 'service');
 
-getGenericPassword().then(result => {
-  (result: boolean | SharedWebCredentials);
+getGenericPassword().then((result) => {
+  (result: boolean | UserCredentials);
 });
 getGenericPassword(simpleOptions);
 getGenericPassword({
   authenticationPrompt: 'authenticationPrompt',
 });
 getGenericPassword('service');
+getAllGenericPasswordServices().then((result) => {
+  (result: string[]);
+});
 
-resetGenericPassword().then(result => {
+resetGenericPassword().then((result) => {
   (result: boolean);
 });
 resetGenericPassword(simpleOptions);
 resetGenericPassword('service');
 
-requestSharedWebCredentials().then(result => {
+requestSharedWebCredentials().then((result) => {
   if (result) {
     (result.server: string);
     (result.username: string);
@@ -117,6 +122,6 @@ requestSharedWebCredentials().then(result => {
   }
 });
 
-setSharedWebCredentials('server', 'username', 'password').then(result => {
+setSharedWebCredentials('server', 'username', 'password').then((result) => {
   (result: void);
 });

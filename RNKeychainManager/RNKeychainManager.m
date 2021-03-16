@@ -12,7 +12,9 @@
 #import <React/RCTBridge.h>
 #import <React/RCTUtils.h>
 
+#if TARGET_OS_IOS
 #import <LocalAuthentication/LAContext.h>
+#endif
 #import <UIKit/UIKit.h>
 
 @implementation RNKeychainManager
@@ -152,6 +154,7 @@ NSString *authenticationPromptValue(NSDictionary *options)
 #define kBiometryTypeTouchID @"TouchID"
 #define kBiometryTypeFaceID @"FaceID"
 
+#if TARGET_OS_IOS
 LAPolicy authPolicy(NSDictionary *options)
 {
   if (options && options[kAuthenticationType]) {
@@ -161,6 +164,7 @@ LAPolicy authPolicy(NSDictionary *options)
   }
   return LAPolicyDeviceOwnerAuthentication;
 }
+#endif
 
 SecAccessControlCreateFlags accessControlValue(NSDictionary *options)
 {
@@ -203,10 +207,12 @@ SecAccessControlCreateFlags accessControlValue(NSDictionary *options)
 
   if (accessControl) {
     NSError *aerr = nil;
+#if TARGET_OS_IOS
     BOOL canAuthenticate = [[LAContext new] canEvaluatePolicy:LAPolicyDeviceOwnerAuthentication error:&aerr];
     if (aerr || !canAuthenticate) {
       return rejectWithError(reject, aerr);
     }
+#endif
 
     CFErrorRef error = NULL;
     SecAccessControlRef sacRef = SecAccessControlCreateWithFlags(kCFAllocatorDefault,
@@ -266,6 +272,35 @@ SecAccessControlCreateFlags accessControlValue(NSDictionary *options)
   return SecItemDelete((__bridge CFDictionaryRef) query);
 }
 
+-(NSArray<NSString*>*)getAllServicesForSecurityClasses:(NSArray *)secItemClasses
+{
+  NSMutableDictionary *query = [NSMutableDictionary dictionaryWithObjectsAndKeys:
+                                (__bridge id)kCFBooleanTrue, (__bridge id)kSecReturnAttributes,
+                                (__bridge id)kSecMatchLimitAll, (__bridge id)kSecMatchLimit,
+                                nil];
+  NSMutableArray<NSString*> *services = [NSMutableArray<NSString*> new];
+  for (id secItemClass in secItemClasses) {
+    [query setObject:secItemClass forKey:(__bridge id)kSecClass];
+    NSArray *result = nil;
+    CFTypeRef resultRef = NULL;
+    OSStatus osStatus = SecItemCopyMatching((__bridge CFDictionaryRef)query, (CFTypeRef*)&resultRef);
+    if (osStatus != noErr && osStatus != errSecItemNotFound) {
+      NSError *error = [NSError errorWithDomain:NSOSStatusErrorDomain code:osStatus userInfo:nil];
+      @throw error;
+    } else if (osStatus != errSecItemNotFound) {
+      result = (__bridge NSArray*)(resultRef);
+      if (result != NULL) {
+        for (id entry in result) {
+          NSString *service = [entry objectForKey:(__bridge NSString *)kSecAttrService];
+          [services addObject:service];
+        }
+      }
+    }
+  }
+  
+  return services;
+}
+
 #pragma mark - RNKeychain
 
 #if TARGET_OS_IOS
@@ -300,7 +335,9 @@ RCT_EXPORT_METHOD(getSupportedBiometryType:(RCTPromiseResolveBlock)resolve
         return resolve(kBiometryTypeFaceID);
       }
     }
-    return resolve(kBiometryTypeTouchID);
+    if (context.biometryType == LABiometryTypeTouchID) {
+      return resolve(kBiometryTypeTouchID);
+    }
   }
 
   return resolve([NSNull null]);
@@ -541,5 +578,18 @@ RCT_EXPORT_METHOD(setSharedWebCredentialsForServer:(NSString *)server
   });
 }
 #endif
+
+RCT_EXPORT_METHOD(getAllGenericPasswordServices:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject)
+{
+  @try {
+    NSArray *secItemClasses = [NSArray arrayWithObjects:
+                              (__bridge id)kSecClassGenericPassword,
+                              nil];
+    NSArray *services = [self getAllServicesForSecurityClasses:secItemClasses];
+    return resolve(services);
+  } @catch (NSError *nsError) {
+    return rejectWithError(reject, nsError);
+  }
+}
 
 @end
